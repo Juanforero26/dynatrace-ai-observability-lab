@@ -43,12 +43,24 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExp
 
 # --- Config ------------------------------------------------------------------
 DT_ENV = os.environ["DT_ENVIRONMENT"].rstrip("/")
-# Gen3: platform token (dt0s16) con header Bearer. DT_API_TOKEN se acepta como alias.
-DT_TOKEN = os.getenv("DT_INGEST_TOKEN") or os.environ["DT_API_TOKEN"]
-BASE = os.getenv("DT_OTLP_ENDPOINT", f"{DT_ENV}/api/v2/otlp").rstrip("/")
-HEADERS = {"Authorization": f"Bearer {DT_TOKEN}"}
 RATE = float(os.getenv("GEN_RATE", "3"))
 ERROR_RATE = float(os.getenv("GEN_ERROR_RATE", "0.2"))
+
+# Destino de la telemetría:
+#   - Si GEN_COLLECTOR_ENDPOINT está seteado (ej. http://localhost:4328), se envía
+#     al colector de BindPlane, que la reenvía a Dynatrace (BindPlane agrega el auth).
+#     Así la data del webshop PASA POR el pipeline de BindPlane.
+#   - Si no, se envía DIRECTO a Dynatrace con Bearer (modo original).
+COLLECTOR = os.getenv("GEN_COLLECTOR_ENDPOINT")
+if COLLECTOR:
+    BASE = COLLECTOR.rstrip("/")
+    HEADERS = {}
+    print(f"[gen] destino: BindPlane -> {BASE}")
+else:
+    DT_TOKEN = os.getenv("DT_INGEST_TOKEN") or os.environ["DT_API_TOKEN"]
+    BASE = os.getenv("DT_OTLP_ENDPOINT", f"{DT_ENV}/api/v2/otlp").rstrip("/")
+    HEADERS = {"Authorization": f"Bearer {DT_TOKEN}"}
+    print(f"[gen] destino: Dynatrace directo -> {BASE}")
 
 # Dynatrace exige temporalidad DELTA en métricas OTLP (cumulative -> 400 Bad Request).
 os.environ.setdefault("OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE", "delta")
