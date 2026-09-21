@@ -128,7 +128,7 @@ def main():
                      "score": 1.0 if label == "grounded" else 0.0, "explanation": expl})
         print(f"  - {str(r['span_id'])[:14]}… -> {label}")
 
-    results = pd.DataFrame(rows).set_index("span_id", drop=False)
+    results = pd.DataFrame(rows)  # columnas: span_id, label, score, explanation
     client.spans.log_span_annotations_dataframe(
         dataframe=results, annotation_name="Groundedness", annotator_kind="LLM",
     )
