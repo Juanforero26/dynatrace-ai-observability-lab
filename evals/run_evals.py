@@ -3,14 +3,12 @@ Evals de Phoenix — juez LLM (Claude) de "groundedness" para el SRE Copilot.
 
 Para cada corrida del agente (trace) toma:
   - input     = la pregunta/tarea
-  - reference = los datos recuperados por execute_dql (contexto de Dynatrace)
+  - reference = datos recuperados por execute_dql (contexto de Dynatrace)
   - output    = el informe de causa raíz del agente
-y le pide a Claude que juzgue si el informe está grounded en esos datos o si
-alucina. Escribe el resultado en Phoenix como evaluación del trace.
+y Claude juzga si está grounded o si alucina. El resultado se registra en Phoenix
+como anotación del trace (visible en la UI).
 
-Diseño robusto: usa el SDK de Anthropic directo como juez (no depende de la API
-de phoenix.evals, que cambia entre versiones). Phoenix solo se usa para leer los
-spans y registrar las evaluaciones.
+Cliente: phoenix.client.Client (Phoenix 20.x). Juez: SDK de Anthropic directo.
 
 Correr en el venv de Phoenix:
   ~/phoenix-venv/bin/pip install anthropic python-dotenv
@@ -26,13 +24,15 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 import pandas as pd
-import phoenix as px
-from phoenix.trace import SpanEvaluations
+from phoenix.client import Client
 from anthropic import Anthropic
 
+PHOENIX_URL = os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "http://localhost:6006")
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
 MAX_TRACES = int(os.getenv("EVAL_MAX_TRACES", "15"))
-anthropic = Anthropic()  # usa ANTHROPIC_API_KEY del entorno
+PROJECT = os.getenv("PHOENIX_PROJECT", "sre-copilot")
+
+anthropic = Anthropic()  # ANTHROPIC_API_KEY del entorno
 
 PROMPT = """Eres un evaluador estricto. Un asistente SRE analizó un entorno Dynatrace y \
 entregó una hipótesis de causa raíz. Juzga si esa respuesta está SUSTENTADA en los datos \
@@ -51,10 +51,9 @@ Si no hubo datos recuperados pero el asistente afirmó causas concretas, es "hal
 Responde SOLO con JSON: {{"label": "grounded" | "hallucinated", "explanation": "<breve>"}}"""
 
 
-def judge(q: str, ctx: str, ans: str):
+def judge(q, ctx, ans):
     msg = anthropic.messages.create(
-        model=MODEL,
-        max_tokens=300,
+        model=MODEL, max_tokens=300,
         messages=[{"role": "user", "content": PROMPT.format(q=q, ctx=ctx, ans=ans)}],
     )
     text = "".join(getattr(b, "text", "") for b in msg.content)
@@ -66,9 +65,7 @@ def judge(q: str, ctx: str, ans: str):
     except Exception:  # noqa: BLE001
         low = text.lower()
         label = "grounded" if ("grounded" in low and "halluc" not in low) else "hallucinated"
-    if label not in ("grounded", "hallucinated"):
-        label = "hallucinated"
-    return label, expl
+    return ("grounded" if label == "grounded" else "hallucinated"), expl
 
 
 def cell(row, name, default=""):
@@ -79,18 +76,28 @@ def cell(row, name, default=""):
         return default
 
 
-def main() -> None:
-    client = px.Client()
+def main():
+    client = Client(base_url=PHOENIX_URL)
     try:
-        df = client.get_spans_dataframe(project_name="sre-copilot")
+        df = client.spans.get_spans_dataframe(project_identifier=PROJECT, limit=2000)
     except TypeError:
-        df = client.get_spans_dataframe()
-    if df is None or df.empty:
-        print("[evals] No hay spans en 'sre-copilot'. Corre el agente primero.")
+        df = client.spans.get_spans_dataframe(project_identifier=PROJECT)
+
+    if df is None or len(df) == 0:
+        print(f"[evals] No hay spans en el proyecto '{PROJECT}'. Corre el agente primero.")
         return
 
-    trace_col = "context.trace_id" if "context.trace_id" in df.columns else "trace_id"
-    span_col = "context.span_id" if "context.span_id" in df.columns else "span_id"
+    # El span_id suele venir como índice; lo pasamos a columna.
+    if df.index.name and df.index.name not in df.columns:
+        df = df.reset_index()
+
+    cols = list(df.columns)
+    span_col = next((c for c in ("context.span_id", "span_id") if c in cols), None)
+    trace_col = next((c for c in ("context.trace_id", "trace_id") if c in cols), None)
+    if not span_col or not trace_col:
+        print("[evals] No encuentro columnas de span/trace id. Columnas disponibles:")
+        print(cols)
+        return
 
     records = []
     for _, g in df.groupby(trace_col):
@@ -119,15 +126,17 @@ def main() -> None:
         label, expl = judge(r["q"], r["ctx"], r["ans"])
         rows.append({"span_id": r["span_id"], "label": label,
                      "score": 1.0 if label == "grounded" else 0.0, "explanation": expl})
-        print(f"  - {r['span_id'][:12]}… -> {label}")
+        print(f"  - {str(r['span_id'])[:14]}… -> {label}")
 
-    results = pd.DataFrame(rows).set_index("span_id")
-    client.log_evaluations(SpanEvaluations(eval_name="Groundedness", dataframe=results))
+    results = pd.DataFrame(rows).set_index("span_id", drop=False)
+    client.spans.log_span_annotations_dataframe(
+        dataframe=results, annotation_name="Groundedness", annotator_kind="LLM",
+    )
 
     print("\n[evals] Resumen:")
     print(results["label"].value_counts().to_string())
-    print("\n[evals] Listo. Phoenix (localhost:6006) → proyecto 'sre-copilot' → "
-          "columna 'Groundedness' en los traces.")
+    print(f"\n[evals] Listo. Phoenix ({PHOENIX_URL}) → proyecto '{PROJECT}' → "
+          "anotación 'Groundedness' en los traces.")
 
 
 if __name__ == "__main__":
