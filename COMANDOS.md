@@ -83,3 +83,9 @@ curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
 - Phoenix corre en **venv aparte** del agente (sus dependencias chocan: `mcp<2` vs `mcp>=2`).
 - Endpoint del agente = **4318** (el colector), NO 6006 (eso es Phoenix directo, se salta BindPlane).
 - gRPC del Source de BindPlane movido a **4319** para no chocar con el 4317 de Phoenix.
+
+### Ingesta OTLP a Dynatrace Gen3 (aprendido con el data-generator)
+- Auth = **platform token (`dt0s16`) con header `Bearer`**. Los tokens clásicos `dt0c01` están **deprecados** en Gen3.
+- El token **hereda permisos del usuario**: además del scope, el usuario necesita una **policy IAM de OpenPipeline** (`ALLOW openpipeline:traces:ingest;` + metrics + logs). Sin ella → `403 Forbidden`.
+- Métricas OTLP exigen **temporalidad DELTA** (`OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta`); cumulative → `400 Bad Request`.
+- Endpoint: `{DT_ENVIRONMENT}/api/v2/otlp/v1/{traces,metrics,logs}`, `http/protobuf` (no gRPC, no JSON).

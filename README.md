@@ -54,6 +54,6 @@ irrefutable de que la telemetría pasó por BindPlane (el agente nunca lo envía
 
 ## Siguientes pasos
 
-1. **App generadora de datos** → ✅ construida (`data-generator/`). Falta token de ingesta y correrla.
-2. **Destino Dynatrace en BindPlane** → fan-out real a Phoenix + Dynatrace (usa el mismo token de ingesta).
-3. **Evals en Phoenix** (groundedness/alucinación) → "así se ve la calidad de la IA" para clientes.
+1. **App generadora de datos** → ✅ **funcionando**: emite traces/logs/métricas reales a Dynatrace (webshop con fallas en payment). Ver `data-generator/`.
+2. **Evals en Phoenix** (groundedness/alucinación) → "así se ve la calidad de la IA" para clientes. ← en curso.
+3. **Destino Dynatrace en BindPlane** → fan-out real (que la data del generador pase por BindPlane, no directa).
