@@ -50,6 +50,9 @@ HEADERS = {"Authorization": f"Bearer {DT_TOKEN}"}
 RATE = float(os.getenv("GEN_RATE", "3"))
 ERROR_RATE = float(os.getenv("GEN_ERROR_RATE", "0.2"))
 
+# Dynatrace exige temporalidad DELTA en métricas OTLP (cumulative -> 400 Bad Request).
+os.environ.setdefault("OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE", "delta")
+
 span_exporter = OTLPSpanExporter(endpoint=f"{BASE}/v1/traces", headers=HEADERS)
 metric_exporter = OTLPMetricExporter(endpoint=f"{BASE}/v1/metrics", headers=HEADERS)
 
