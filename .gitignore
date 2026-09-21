@@ -1,0 +1,25 @@
+# Secretos y entorno
+.env
+*.env
+!.env.example
+
+# Python
+.venv/
+agents/.venv/
+**/.venv/
+__pycache__/
+*.pyc
+.python-version
+
+# Datos locales / volúmenes
+data/
+*.db
+*.sqlite
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+
+# Descargas de la app
+Claude outputs/

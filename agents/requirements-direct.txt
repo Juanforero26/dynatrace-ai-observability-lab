@@ -1,0 +1,9 @@
+# SRE Copilot — Plan B (sin librerías MCP, sin servidor Phoenix)
+langgraph
+langchain
+langchain-anthropic
+openinference-instrumentation-langchain
+opentelemetry-sdk
+opentelemetry-exporter-otlp
+httpx
+python-dotenv

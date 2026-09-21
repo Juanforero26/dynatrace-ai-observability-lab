@@ -1,0 +1,13 @@
+# SRE Copilot — Fase 4
+langgraph
+langchain
+langchain-anthropic
+langchain-mcp-adapters
+mcp
+# Instrumentación de IA (OpenInference -> OTLP)
+openinference-instrumentation-langchain
+opentelemetry-sdk
+opentelemetry-exporter-otlp
+opentelemetry-api
+# Utilidades
+python-dotenv

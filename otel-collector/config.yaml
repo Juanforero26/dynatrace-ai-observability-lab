@@ -1,0 +1,60 @@
+# =============================================================================
+# OTel Collector standalone  (Fase 3 — el pipeline "manual")
+#
+# Recibe OTLP de los agentes y hace FAN-OUT a:
+#   - Arize Phoenix   -> señales de IA (spans OpenInference, tokens, evals)
+#   - Dynatrace       -> traces/logs/métricas full-stack
+#
+# En Fase 2 este mismo pipeline se reconstruye DENTRO de BindPlane, para
+# mostrar el control plane (processors, routing, reducción de costo) sin
+# tener que editar este YAML a mano.
+# =============================================================================
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+  # Ejemplo del tipo de transformación que luego gestionará BindPlane:
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: lab
+        action: upsert
+
+exporters:
+  # --- AI observability: Arize Phoenix (solo traces) ---
+  # El exporter otlphttp agrega /v1/traces automáticamente.
+  otlphttp/phoenix:
+    endpoint: http://phoenix:6006
+
+  # --- Full-stack: Dynatrace ---
+  # DT_OTLP_ENDPOINT y DT_API_TOKEN vienen de .env (ver .env.example).
+  otlphttp/dynatrace:
+    endpoint: ${env:DT_OTLP_ENDPOINT}
+    headers:
+      Authorization: "Api-Token ${env:DT_API_TOKEN}"
+
+  # Útil para depurar en los logs del colector durante el lab.
+  debug:
+    verbosity: normal
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlphttp/phoenix, otlphttp/dynatrace, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlphttp/dynatrace, debug]
+    logs:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlphttp/dynatrace, debug]

@@ -1,0 +1,9 @@
+# SRE Copilot — versión mínima (Fase 4, iteración 1)
+arize-phoenix
+arize-phoenix-otel
+openinference-instrumentation-langchain
+langgraph>=0.3
+langchain>=0.3
+langchain-anthropic>=0.3
+langchain-mcp-adapters>=0.1
+python-dotenv
