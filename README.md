@@ -45,12 +45,15 @@ irrefutable de que la telemetría pasó por BindPlane (el agente nunca lo envía
 ├── agents/
 │   ├── sre_copilot_direct.py     ← agente activo (DQL directo + Phoenix)
 │   └── requirements-direct.txt
+├── data-generator/               ← app OTel que emite data real a Dynatrace
+│   ├── generate_telemetry.py
+│   └── requirements.txt
 ├── .env / .env.example / .gitignore
 └── _archive/                     ← intentos previos (referencia; no se usan)
 ```
 
-## Siguientes pasos (sin prisa)
+## Siguientes pasos
 
-1. **App generadora de datos** en Dynatrace → para que `execute_dql` traiga data real.
-2. **Destino Dynatrace en BindPlane** → fan-out real a Phoenix + Dynatrace (pide token de ingesta).
+1. **App generadora de datos** → ✅ construida (`data-generator/`). Falta token de ingesta y correrla.
+2. **Destino Dynatrace en BindPlane** → fan-out real a Phoenix + Dynatrace (usa el mismo token de ingesta).
 3. **Evals en Phoenix** (groundedness/alucinación) → "así se ve la calidad de la IA" para clientes.

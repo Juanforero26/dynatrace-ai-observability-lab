@@ -1,0 +1,4 @@
+# Generador de datos sintéticos -> Dynatrace (OTLP/HTTP protobuf)
+opentelemetry-sdk
+opentelemetry-exporter-otlp-proto-http
+python-dotenv
