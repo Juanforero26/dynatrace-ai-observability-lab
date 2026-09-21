@@ -9,9 +9,10 @@ investigue.
 
 En el `.env` de la raíz:
 - `DT_ENVIRONMENT` — tu ambiente sprint.
-- `DT_API_TOKEN` — **access token clásico** (`dt0c01`) con scopes:
-  `openTelemetryTrace.ingest`, `metrics.ingest`, `logs.ingest`.
-  (Es un token distinto al platform token del MCP.)
+- `DT_INGEST_TOKEN` — **platform token** (`dt0s16`, header `Bearer`) con scopes de
+  **OpenPipeline**: `openpipeline:traces:ingest`, `openpipeline:metrics:ingest`,
+  `openpipeline:logs:ingest`. (En Gen3 los tokens clásicos `dt0c01` están deprecados.)
+  Puede ser el mismo platform token del MCP si le agregas estos scopes, o uno aparte.
 
 ## Correr
 

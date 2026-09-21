@@ -11,7 +11,9 @@ Envía OTLP/HTTP (protobuf) directo a Dynatrace:
 
 Requisitos (.env en la raíz del repo):
   DT_ENVIRONMENT   = https://<env>.sprint.apps.dynatracelabs.com
-  DT_API_TOKEN     = dt0c01....  (scopes: openTelemetryTrace.ingest, metrics.ingest, logs.ingest)
+  DT_INGEST_TOKEN  = dt0s16....  (platform token, header Bearer, scopes OpenPipeline:
+                     openpipeline:traces:ingest, openpipeline:metrics:ingest, openpipeline:logs:ingest)
+                     (se acepta DT_API_TOKEN como alias)
   # opcionales:
   DT_OTLP_ENDPOINT = (por defecto = DT_ENVIRONMENT + /api/v2/otlp)
   GEN_RATE         = transacciones por segundo (def. 3)
@@ -41,9 +43,10 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExp
 
 # --- Config ------------------------------------------------------------------
 DT_ENV = os.environ["DT_ENVIRONMENT"].rstrip("/")
-DT_TOKEN = os.environ["DT_API_TOKEN"]
+# Gen3: platform token (dt0s16) con header Bearer. DT_API_TOKEN se acepta como alias.
+DT_TOKEN = os.getenv("DT_INGEST_TOKEN") or os.environ["DT_API_TOKEN"]
 BASE = os.getenv("DT_OTLP_ENDPOINT", f"{DT_ENV}/api/v2/otlp").rstrip("/")
-HEADERS = {"Authorization": f"Api-Token {DT_TOKEN}"}
+HEADERS = {"Authorization": f"Bearer {DT_TOKEN}"}
 RATE = float(os.getenv("GEN_RATE", "3"))
 ERROR_RATE = float(os.getenv("GEN_ERROR_RATE", "0.2"))
 
