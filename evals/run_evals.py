@@ -30,7 +30,7 @@ from anthropic import Anthropic
 PHOENIX_URL = os.getenv("PHOENIX_COLLECTOR_ENDPOINT", "http://localhost:6006")
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
 MAX_TRACES = int(os.getenv("EVAL_MAX_TRACES", "15"))
-PROJECT = os.getenv("PHOENIX_PROJECT", "sre-copilot")
+PROJECT = os.getenv("PHOENIX_PROJECT", "default")  # los traces del agente caen en 'default'
 
 anthropic = Anthropic()  # ANTHROPIC_API_KEY del entorno
 
