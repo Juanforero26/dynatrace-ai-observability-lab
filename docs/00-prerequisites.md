@@ -31,7 +31,7 @@ Nada de esto cuesta dinero salvo, más adelante, unas pocas llamadas al LLM.
 3. Costo esperado del lab: bajísimo. El SRE Copilot hace pocas llamadas por
    corrida; con un modelo pequeño/medio el gasto es de centavos. -- 
    
-   ***REDACTED***
+   <TU_API_KEY_VA_EN_.env_NUNCA_AQUI>
 
 ## 0.4 Preparar el repo
 
